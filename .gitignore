@@ -1,0 +1,8 @@
+.env
+__pycache__/
+keys.json
+users.db
+bot.log
+access.log
+error.log
+config.json
