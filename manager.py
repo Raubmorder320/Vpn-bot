@@ -46,10 +46,11 @@ class Manager:
 
         settings = self.data['inbounds'][0]['streamSettings']['realitySettings']
         sni = settings['serverNames'][0]
+        sid = settings['shortIds'][0]
         link = (
             f"vless://{uuid}@{server_ip}:443?"
             f"security=reality&sni={sni}&fp=chrome&pbk={public_key}"
-            f"&type=tcp&flow=xtls-rprx-vision#bot_{telegram_id}"
+            f"&type=tcp&sid={sid}&flow=xtls-rprx-vision#bot_{telegram_id}"
         )
         return link
     def generate_keys(self):
