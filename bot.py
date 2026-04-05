@@ -63,7 +63,17 @@ async def back_to_menu(callback_query: CallbackQuery):
     await callback_query.answer()
     await callback_query.message.edit_text("Вы находитесь в главном меню.", reply_markup=start_builder.as_markup())
 
-
+@dp.message(Command("stats"))
+async def show_stats(message: types.Message):
+    if str(message.from_user.id) == os.getenv("ADMIN_TELEGRAM_ID"):
+        try:
+            daily_usage = vpn_service.vnstat_daily_usage()
+            await message.answer(f"Daily network usage: {daily_usage}")
+        except Exception as e:
+            logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
+            await message.answer(f"Error: {str(e)}")
+    else:
+        await message.answer("You are not authorized to view this information.")
 
 if __name__ == '__main__':
     from asyncio import run
