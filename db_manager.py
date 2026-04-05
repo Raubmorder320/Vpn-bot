@@ -29,10 +29,20 @@ class DatabaseManager:
                 INSERT INTO users (username, telegram_id, uuid) VALUES (?, ?, ?)
             ''', (username, telegram_id, uuid))
 
-    def get_user(self, telegram_id):
+    def get_user_info(self, telegram_id):
         cursor = self.conn.cursor()
         cursor.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,))
-        return cursor.fetchone()
+        user = cursor.fetchone()
+        if user:
+            return {
+                'id': user[0],
+                'username': user[1],
+                'telegram_id': user[2],
+                'uuid': user[3],
+                'created_at': user[4],
+                'is_active': user[5]
+            }
+        return None
 
     def get_all_users(self):
         cursor = self.conn.cursor()
