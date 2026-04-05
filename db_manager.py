@@ -48,3 +48,7 @@ class DatabaseManager:
         cursor = self.conn.cursor()
         cursor.execute('SELECT * FROM users')
         return cursor.fetchall()
+    def get_user(self, telegram_id):
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,))
+        return cursor.fetchone()

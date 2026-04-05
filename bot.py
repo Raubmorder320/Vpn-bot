@@ -17,8 +17,15 @@ dp = Dispatcher()
 vpn_service = VpnService(os.getenv("CONFIG_PATH"), os.getenv("DB_PATH"))
 start_builder = InlineKeyboardBuilder()
 start_builder.row(InlineKeyboardButton(text="🔑Мой ключ", callback_data="get_key"), InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"))
+back_button = InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")
+instructions_builder = InlineKeyboardBuilder()
+instructions_builder.row(back_button, InlineKeyboardButton(text="Android", callback_data="android_instruction"), 
+                         InlineKeyboardButton(text="iOS", callback_data="ios_instruction"), 
+                         InlineKeyboardButton(text="Windows", callback_data="windows_instruction"), 
+                         InlineKeyboardButton(text="MacOS", callback_data="macos_instruction"), width=2)
 menu_builder = InlineKeyboardBuilder()
-menu_builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_to_menu"))
+menu_builder.row(InlineKeyboardButton(text="🔑Мой ключ", callback_data="get_key"), InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"))
+
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -55,7 +62,7 @@ async def get_key(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "instruction")
 async def show_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("Here is how to use the VPN configuration.", reply_markup=menu_builder.as_markup())
+    await callback_query.message.edit_text("Выберите вашу операционную систему:", reply_markup=instructions_builder.as_markup())
 
 
 @dp.callback_query(F.data == "back_to_menu")
@@ -74,6 +81,39 @@ async def show_stats(message: types.Message):
             await message.answer(f"Error: {str(e)}")
     else:
         await message.answer("У вас нет доступа к этой команде.")
+
+@dp.callback_query(F.data == "android_instruction")
+async def android_instruction(callback_query: CallbackQuery):
+    await callback_query.answer()
+    await callback_query.message.edit_text("""Инструкция для Android: \n 
+                                           1. Скачайте и установите приложение XrayR из Google Play Store. \n 
+                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
+                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
+                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+@dp.callback_query(F.data == "ios_instruction")
+async def ios_instruction(callback_query: CallbackQuery):
+    await callback_query.answer()
+    await callback_query.message.edit_text("""Инструкция для iOS: \n 
+                                           1. Скачайте и установите приложение ShadowRay из App Store. \n 
+                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
+                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
+                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+@dp.callback_query(F.data == "windows_instruction")
+async def windows_instruction(callback_query: CallbackQuery):
+    await callback_query.answer()
+    await callback_query.message.edit_text("""Инструкция для Windows: \n 
+                                           1. Скачайте и установите приложение XrayR для Windows с официального сайта. \n 
+                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
+                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
+                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+@dp.callback_query(F.data == "macos_instruction")
+async def macos_instruction(callback_query: CallbackQuery):
+    await callback_query.answer()
+    await callback_query.message.edit_text("""Инструкция для MacOS: \n 
+                                           1. Скачайте и установите приложение ShadowRay для MacOS с официального сайта. \n 
+                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
+                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
+                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
 
 if __name__ == '__main__':
     from asyncio import run
