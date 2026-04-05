@@ -65,7 +65,6 @@ async def back_to_menu(callback_query: CallbackQuery):
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
-    await message.answer(message.from_user.id)
     if str(message.from_user.id) == os.getenv("ADMIN_TELEGRAM_ID"):
         try:
             daily_usage = vpn_service.vnstat_daily_usage()
