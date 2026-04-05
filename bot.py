@@ -25,9 +25,19 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.FileHandler("bot.log"), logging.StreamHandler()]
                     )
 logger = logging.getLogger(__name__)
+
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Привет! Добро пожаловать в бот!", reply_markup=start_builder.as_markup())
+    user_info = vpn_service.get_user_info(str(message.from_user.id))
+    if user_info is None:
+        await message.answer("Привет! Добро пожаловать в бот! Похоже, вы новый пользователь. Нажмите кнопку ниже, чтобы получить свой VPN ключ.", reply_markup=start_builder.as_markup())
+    else:
+        await message.answer(f"""Привет! Добро пожаловать в бот! Информация о пользователе:\n 
+                         Имя: {user_info['username']} \n
+                         ID: {user_info['telegram_id']}\n
+                        Дата регистрации: {user_info['created_at']} \n
+                    """, reply_markup=start_builder.as_markup())
 
 
 

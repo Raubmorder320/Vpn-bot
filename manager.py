@@ -50,7 +50,7 @@ class Manager:
         link = (
             f"vless://{uuid}@{server_ip}:443?"
             f"security=reality&sni={sni}&fp=chrome&pbk={public_key}"
-            f"&type=tcp&sid={sid}&flow=xtls-rprx-vision#bot_{telegram_id}"
+            f"&type=tcp&sid={sid}&flow=xtls-rprx-vision#Amsterdam_{telegram_id}"
         )
         return link
     def generate_keys(self):
@@ -74,3 +74,11 @@ class Manager:
             return True
         else:
             return "Configuration is invalid: " + result.stderr
+    def vnstat_daily_usage(self):
+        '''Retrieves daily network usage statistics using vnstat.'''
+        result = subprocess.run(['vnstat', '-d', '--json'], capture_output=True, text=True)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return data['interfaces'][0]['traffic']['day']
+        else:
+            raise Exception("Failed to retrieve vnstat data: " + result.stderr)
