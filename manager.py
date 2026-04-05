@@ -79,6 +79,6 @@ class Manager:
         result = subprocess.run(['vnstat', '-d', '--json'], capture_output=True, text=True)
         if result.returncode == 0:
             data = json.loads(result.stdout)
-            return data['interfaces'][0]['traffic']['day']
+            return (data['interfaces'][0]['traffic']['day'][0]['rx'] + data['interfaces'][0]['traffic']['day'][0]['tx']) / (1024 * 1024 * 1024)  # Convert to GB
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
