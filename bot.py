@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.edit_text("Привет! Добро пожаловать в бот!", reply_markup=start_builder.as_markup())
+    await message.answer("Привет! Добро пожаловать в бот!", reply_markup=start_builder.as_markup())
 
 
 
