@@ -59,7 +59,7 @@ class VpnService:
                 'created_at': user['created_at'],
             }
         else:
-            raise None
+            return None
     def vnstat_daily_usage(self):
         '''Retrieves daily network usage statistics using vnstat.'''
         return self.manager.vnstat_daily_usage()
