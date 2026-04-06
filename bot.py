@@ -40,11 +40,12 @@ async def cmd_start(message: types.Message):
     if user_info is None:
         await message.answer("Привет! Добро пожаловать в бот! Похоже, вы новый пользователь. Нажмите кнопку ниже, чтобы получить свой VPN ключ.", reply_markup=start_builder.as_markup())
     else:
-        await message.answer(f"""Привет! Добро пожаловать в бот! Информация о пользователе:\n 
-                         Имя: {user_info['username']} \n
-                         ID: {user_info['telegram_id']}\n
-                        Дата регистрации: {user_info['created_at']} \n
-                    """, parse_mode="HTML", reply_markup=start_builder.as_markup())
+        text = (f"Привет! Добро пожаловать в бот! Информация о пользователе:\n\n" 
+                         f"Имя: {user_info['username']}\n"
+                         f"ID: {user_info['telegram_id']}\n"
+                         f"Дата регистрации: {user_info['created_at']}\n"
+                    )
+        await message.answer(text, parse_mode="HTML", reply_markup=start_builder.as_markup())
 
 
 
@@ -107,35 +108,39 @@ async def show_stats(message: types.Message):
 @dp.callback_query(F.data == "android_instruction")
 async def android_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("""Инструкция для Android: \n 
-                                           1. Скачайте и установите приложение XrayR из Google Play Store. \n 
-                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
-                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
+    text = (f"Инструкция для Android: \n "
+            f"1. Скачайте и установите приложение XrayR из Google Play Store. \n "
+            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
+            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
+            f"4. Сохраните конфигурацию и активируйте её.")
+    await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "ios_instruction")
 async def ios_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("""Инструкция для iOS: \n 
-                                           1. Скачайте и установите приложение ShadowRay из App Store. \n 
-                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
-                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
+    text = (f"Инструкция для iOS: \n "
+            f"1. Скачайте и установите приложение ShadowRay из App Store. \n "
+            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
+            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
+            f"4. Сохраните конфигурацию и активируйте её.")
+    await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "windows_instruction")
 async def windows_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("""Инструкция для Windows: \n 
-                                           1. Скачайте и установите приложение XrayR для Windows с официального сайта. \n 
-                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
-                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
+    text = (f"Инструкция для Windows: \n "
+            f"1. Скачайте и установите приложение XrayR для Windows с официального сайта. \n "
+            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
+            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
+            f"4. Сохраните конфигурацию и активируйте её.")
+    await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "macos_instruction")
 async def macos_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("""Инструкция для MacOS: \n 
-                                           1. Скачайте и установите приложение ShadowRay для MacOS с официального сайта. \n 
-                                           2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
-                                           3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
+    text = (f"Инструкция для MacOS: \n "
+            f"1. Скачайте и установите приложение ShadowRay для MacOS с официального сайта. \n "
+            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
+            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
+            f"4. Сохраните конфигурацию и активируйте её.")
+    await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 if __name__ == '__main__':
     from asyncio import run
