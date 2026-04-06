@@ -52,11 +52,32 @@ async def cmd_start(message: types.Message):
 async def get_key(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
-        link = vpn_service.get_user_config(str(callback_query.from_user.id))
-        await callback_query.message.edit_text(f"Your VPN configuration link: {link}", reply_markup=menu_builder.as_markup())
+        name = callback_query.from_user.username or callback_query.from_user.first_name
+        link = vpn_service.get_user_config(str(callback_query.from_user.id), name)
+        text = (
+            "<b>Вот ваша основная ссылка для подключения к VPN.</b>\n\n"
+            f"<code>{link}</code>\n\n"
+        )
+        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
         logger.error(f"Error occurred while fetching VPN config: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}")
+
+@dp.callback_query(F.data == "emergency_key")
+async def get_emergency_key(callback_query: CallbackQuery):
+    await callback_query.answer()
+    try:
+        name = callback_query.from_user.username or callback_query.from_user.first_name
+        link = vpn_service.get_user_config(str(callback_query.from_user.id), name, inbound_index=1)
+        text = (
+            "<b>Вот ваша аварийная ссылка для подключения к VPN.</b>\n\n"
+            f"<code>{link}</code>\n\n"
+        )
+        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
+    except Exception as e:
+        logger.error(f"Error occurred while fetching emergency VPN config: {str(e)}")
+        await callback_query.message.answer(f"Error: {str(e)}")
+
 
 
 @dp.callback_query(F.data == "instruction")

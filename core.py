@@ -36,11 +36,11 @@ class VpnService:
             raise Exception("Invalid configuration after adding user.")
         self.restart_service()
 
-    def get_user_config(self, telegram_id, inbound_index=0):
+    def get_user_config(self, telegram_id, username,inbound_index=0):
         ''''Retrieves the VPN configuration link for the user with the given Telegram ID.'''
         user = self.db_manager.get_user(telegram_id)
         if not user:
-            self.register_new_user("user_" + telegram_id, telegram_id)     
+            self.register_new_user(username, telegram_id)     
         return self.manager.get_link(user[3], telegram_id, self.server_ip, self.public_key, inbound_index)
     def validate_config(self):
         ''''Validates the current configuration using the manager.'''
