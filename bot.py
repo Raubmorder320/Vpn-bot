@@ -44,7 +44,7 @@ async def cmd_start(message: types.Message):
                          Имя: {user_info['username']} \n
                          ID: {user_info['telegram_id']}\n
                         Дата регистрации: {user_info['created_at']} \n
-                    """, reply_markup=start_builder.as_markup())
+                    """, parse_mode="HTML", reply_markup=start_builder.as_markup())
 
 
 
@@ -55,7 +55,7 @@ async def get_key(callback_query: CallbackQuery):
         name = callback_query.from_user.username or callback_query.from_user.first_name
         link = vpn_service.get_user_config(str(callback_query.from_user.id), name)
         text = (
-            "<b>Вот ваша основная ссылка для подключения к VPN.</b>\n\n"
+            "<b>Вот ваша основная ссылка для подключения к VPN.</b>\nДля копирования нажмите на неё.\n\n"
             f"<code>{link}</code>\n\n"
         )
         await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
@@ -83,13 +83,13 @@ async def get_emergency_key(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "instruction")
 async def show_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("Выберите вашу операционную систему:", reply_markup=instructions_builder.as_markup())
+    await callback_query.message.edit_text("Выберите вашу операционную систему:", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 
 @dp.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("Вы находитесь в главном меню.", reply_markup=start_builder.as_markup())
+    await callback_query.message.edit_text("Вы находитесь в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
 
 @dp.message(Command("stats"))
 async def show_stats(message: types.Message):
@@ -97,12 +97,12 @@ async def show_stats(message: types.Message):
         try:
             daily_usage = vpn_service.vnstat_daily_usage()
             monthly_usage = vpn_service.vnstat_monthly_usage()
-            await message.answer(f"За сегодня использовано {daily_usage} Гб\nЗа этот месяц использовано {monthly_usage} Гб\n\nОстаток трафика: {1000 - int(monthly_usage)} Гб")
+            await message.answer(f"За сегодня использовано {daily_usage} Гб\nЗа этот месяц использовано {monthly_usage} Гб\n\nОстаток трафика: {1000 - float(monthly_usage)} Гб", parse_mode="HTML")
         except Exception as e:
             logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
-            await message.answer(f"Error: {str(e)}")
+            await message.answer(f"Error: {str(e)}", parse_mode="HTML")
     else:
-        await message.answer("У вас нет доступа к этой команде.")
+        await message.answer("У вас нет доступа к этой команде.", parse_mode="HTML")
 
 @dp.callback_query(F.data == "android_instruction")
 async def android_instruction(callback_query: CallbackQuery):
@@ -111,7 +111,7 @@ async def android_instruction(callback_query: CallbackQuery):
                                            1. Скачайте и установите приложение XrayR из Google Play Store. \n 
                                            2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
                                            3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "ios_instruction")
 async def ios_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
@@ -119,7 +119,7 @@ async def ios_instruction(callback_query: CallbackQuery):
                                            1. Скачайте и установите приложение ShadowRay из App Store. \n 
                                            2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
                                            3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "windows_instruction")
 async def windows_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
@@ -127,7 +127,7 @@ async def windows_instruction(callback_query: CallbackQuery):
                                            1. Скачайте и установите приложение XrayR для Windows с официального сайта. \n 
                                            2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
                                            3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "macos_instruction")
 async def macos_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
@@ -135,7 +135,7 @@ async def macos_instruction(callback_query: CallbackQuery):
                                            1. Скачайте и установите приложение ShadowRay для MacOS с официального сайта. \n 
                                            2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n 
                                            3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n 
-                                           4. Сохраните конфигурацию и активируйте её.""", reply_markup=instructions_builder.as_markup())
+                                           4. Сохраните конфигурацию и активируйте её.""", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 if __name__ == '__main__':
     from asyncio import run
