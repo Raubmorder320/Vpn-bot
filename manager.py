@@ -34,7 +34,7 @@ class Manager:
         user_id = self.generate_uuid()
         for inbound in self.data.get('inbounds', []):
             inbound['settings']['clients'].append({
-                'username': username,
+                'email': username,
                 'id': user_id,
                 'flow': 'xtls-rprx-vision',
             })
@@ -85,3 +85,13 @@ class Manager:
             return round((data['interfaces'][0]['traffic']['day'][-1]['rx'] + data['interfaces'][-1]['traffic']['day'][0]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
+    def vnstat_monthly_usage(self):
+        '''Retrieves monthly network usage statistics using vnstat.'''
+        result = subprocess.run(['vnstat', '-m', '--json'], capture_output=True, text=True)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return round((data['interfaces'][0]['traffic']['month'][-1]['rx'] + data['interfaces'][0]['traffic']['month'][-1]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
+        else:
+            raise Exception("Failed to retrieve vnstat data: " + result.stderr)
+
+
