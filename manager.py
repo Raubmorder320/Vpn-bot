@@ -49,10 +49,11 @@ class Manager:
         port = settings['port']
         sni = settings['streamSettings']['realitySettings']['serverNames'][0]
         sid = settings['streamSettings']['realitySettings']['shortIds'][0]
+        label = "Global High-Speed" if inbound_index == 0 else "Emergency Bypass"
         link = (
             f"vless://{uuid}@{server_ip}:{port}?"
             f"security=reality&sni={sni}&fp=chrome&pbk={public_key}"
-            f"&type=tcp&sid={sid}&flow=xtls-rprx-vision#Amsterdam_{telegram_id}"
+            f"&type=tcp&sid={sid}&flow=xtls-rprx-vision#🇳🇱 NL | {label}"
         )
         return link
     def generate_keys(self):
