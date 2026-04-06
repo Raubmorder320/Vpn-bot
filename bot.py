@@ -96,7 +96,8 @@ async def show_stats(message: types.Message):
     if str(message.from_user.id) == os.getenv("ADMIN_TELEGRAM_ID"):
         try:
             daily_usage = vpn_service.vnstat_daily_usage()
-            await message.answer(f"За сегодня использовано {daily_usage} Гб")
+            monthly_usage = vpn_service.vnstat_monthly_usage()
+            await message.answer(f"За сегодня использовано {daily_usage} Гб\nЗа этот месяц использовано {monthly_usage} Гб\n\nОстаток трафика: {1000 - int(monthly_usage)} Гб")
         except Exception as e:
             logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
             await message.answer(f"Error: {str(e)}")

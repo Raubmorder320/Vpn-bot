@@ -66,3 +66,6 @@ class VpnService:
     def vnstat_daily_usage(self):
         '''Retrieves daily network usage statistics using vnstat.'''
         return self.manager.vnstat_daily_usage()
+    def vnstat_monthly_usage(self):
+        '''Retrieves monthly network usage statistics using vnstat.'''
+        return self.manager.vnstat_monthly_usage()
