@@ -29,26 +29,28 @@ class Manager:
         '''Generates a unique UUID for a new user.'''
         return str(uuid.uuid4())
 
-    def add_user(self, email):
+    def add_user(self, username):
         '''Adds a new user to the configuration with a unique UUID.'''
         user_id = self.generate_uuid()
-        self.data['inbounds'][0]['settings']['clients'].append({
-            'email': email,
-            'id': user_id,
-            'flow': 'xtls-rprx-vision',
-        })
+        for inbound in self.data.get('inbounds', []):
+            inbound['settings']['clients'].append({
+                'username': username,
+                'id': user_id,
+                'flow': 'xtls-rprx-vision',
+            })
         self.save_data()
         return user_id
 
-    def get_link(self, uuid, telegram_id, server_ip, public_key):
+    def get_link(self, uuid, telegram_id, server_ip, public_key, inbound_index=0):
         '''Generates a VLESS link for the user.'''
 
 
-        settings = self.data['inbounds'][0]['streamSettings']['realitySettings']
-        sni = settings['serverNames'][0]
-        sid = settings['shortIds'][0]
+        settings = self.data['inbounds'][inbound_index]
+        port = settings['port']
+        sni = settings['streamSettings']['realitySettings']['serverNames'][0]
+        sid = settings['streamSettings']['realitySettings']['shortIds'][0]
         link = (
-            f"vless://{uuid}@{server_ip}:443?"
+            f"vless://{uuid}@{server_ip}:{port}?"
             f"security=reality&sni={sni}&fp=chrome&pbk={public_key}"
             f"&type=tcp&sid={sid}&flow=xtls-rprx-vision#Amsterdam_{telegram_id}"
         )
@@ -79,6 +81,7 @@ class Manager:
         result = subprocess.run(['vnstat', '-d', '--json'], capture_output=True, text=True)
         if result.returncode == 0:
             data = json.loads(result.stdout)
-            return round((data['interfaces'][0]['traffic']['day'][0]['rx'] + data['interfaces'][0]['traffic']['day'][0]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
+
+            return round((data['interfaces'][0]['traffic']['day'][-1]['rx'] + data['interfaces'][-1]['traffic']['day'][0]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)

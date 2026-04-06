@@ -16,7 +16,7 @@ bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
 vpn_service = VpnService(os.getenv("CONFIG_PATH"), os.getenv("DB_PATH"))
 start_builder = InlineKeyboardBuilder()
-start_builder.row(InlineKeyboardButton(text="🔑Мой ключ", callback_data="get_key"), InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"))
+start_builder.row(InlineKeyboardButton(text="Основная🚀", callback_data="main_key"), InlineKeyboardButton(text="🆘 Аварийная", callback_data="emergency_key"), InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"), width=2)
 back_button = InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")
 instructions_builder = InlineKeyboardBuilder()
 instructions_builder.row(back_button, InlineKeyboardButton(text="Android", callback_data="android_instruction"), 
@@ -24,7 +24,7 @@ instructions_builder.row(back_button, InlineKeyboardButton(text="Android", callb
                          InlineKeyboardButton(text="Windows", callback_data="windows_instruction"), 
                          InlineKeyboardButton(text="MacOS", callback_data="macos_instruction"), width=2)
 menu_builder = InlineKeyboardBuilder()
-menu_builder.row(InlineKeyboardButton(text="🔑Мой ключ", callback_data="get_key"), InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"))
+menu_builder.row(back_button)
 
 
 logging.basicConfig(level=logging.INFO,
@@ -48,7 +48,7 @@ async def cmd_start(message: types.Message):
 
 
 
-@dp.callback_query(F.data == "get_key")
+@dp.callback_query(F.data == "main_key")
 async def get_key(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
