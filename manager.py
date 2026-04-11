@@ -94,5 +94,7 @@ class Manager:
             return round((data['interfaces'][0]['traffic']['month'][-1]['rx'] + data['interfaces'][0]['traffic']['month'][-1]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
+    # def create_invite(self, username):
+        
 
 
