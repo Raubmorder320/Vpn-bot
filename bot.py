@@ -16,7 +16,10 @@ bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
 vpn_service = VpnService(os.getenv("CONFIG_PATH"), os.getenv("DB_PATH"))
 start_builder = InlineKeyboardBuilder()
-start_builder.row(InlineKeyboardButton(text="Основная🚀", callback_data="main_key"), InlineKeyboardButton(text="🆘 Аварийная", callback_data="emergency_key"), InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"), width=2)
+start_builder.row(InlineKeyboardButton(text="🚀Основная", callback_data="main_key"), 
+                  InlineKeyboardButton(text="🆘 Дополнительная", callback_data="emergency_key"),
+                  InlineKeyboardButton(text="👤 Профиль", callback_data="profile"),
+                  InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"), width=2)
 back_button = InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")
 instructions_builder = InlineKeyboardBuilder()
 instructions_builder.row(back_button, InlineKeyboardButton(text="Android", callback_data="android_instruction"), 
@@ -26,6 +29,11 @@ instructions_builder.row(back_button, InlineKeyboardButton(text="Android", callb
 menu_builder = InlineKeyboardBuilder()
 menu_builder.row(back_button)
 
+admin_builder = InlineKeyboardBuilder()
+admin_builder.row(InlineKeyboardButton(text=" 📊 Общий трафик", callback_data="show_stats"), 
+                  InlineKeyboardButton(text="➕ Создать инвайт", callback_data="create_invite"), 
+                  InlineKeyboardButton(text=" 👥 Список юзеров", callback_data="show_users"), 
+                  InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"), width=2)
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -92,18 +100,63 @@ async def back_to_menu(callback_query: CallbackQuery):
     await callback_query.answer()
     await callback_query.message.edit_text("Вы находитесь в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
 
-@dp.message(Command("stats"))
+@dp.callback_query(F.data == "profile")
+async def show_profile(callback_query: CallbackQuery):
+    await callback_query.answer()
+    try:
+        user_info = vpn_service.get_user_info(str(callback_query.from_user.id))
+        if user_info is None:
+            await callback_query.message.answer("Пользователь не найден. Пожалуйста, нажмите кнопку 'Основная', чтобы создать профиль.", parse_mode="HTML")
+            return
+        text = (f"👤 Имя: {user_info['username']}\n"
+                         f"🌐 IP сервера: {vpn_service.server_ip}\n"
+                         f"🔋 Статус: {user_info['is_active']}\n"
+                         f"⏳ Срок действия: Бессрочно\n"
+                    )
+        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
+    except Exception as e:
+        logger.error(f"Error occurred while fetching user profile: {str(e)}")
+        await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
+
+@dp.message(Command("admin"))
 async def show_stats(message: types.Message):
     if str(message.from_user.id) == os.getenv("ADMIN_TELEGRAM_ID"):
         try:
-            daily_usage = vpn_service.vnstat_daily_usage()
-            monthly_usage = vpn_service.vnstat_monthly_usage()
-            await message.answer(f"За сегодня использовано {daily_usage} Гб\nЗа этот месяц использовано {monthly_usage} Гб\n\nОстаток трафика: {1000 - float(monthly_usage)} Гб", parse_mode="HTML")
+            await message.answer("Добро пожаловать, Хозяин. Что желаете?", parse_mode="HTML", reply_markup=admin_builder.as_markup())
         except Exception as e:
             logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
             await message.answer(f"Error: {str(e)}", parse_mode="HTML")
     else:
         await message.answer("У вас нет доступа к этой команде.", parse_mode="HTML")
+
+@dp.callback_query(F.data == "show_stats")
+async def show_stats(callback_query: CallbackQuery):
+    await callback_query.answer()
+    try:
+        daily_usage = vpn_service.vnstat_daily_usage()
+        monthly_usage = vpn_service.vnstat_monthly_usage()
+        await callback_query.message.answer(f"За сегодня использовано {daily_usage} Гб\nЗа этот месяц использовано {monthly_usage} Гб\n\nОстаток трафика: {1000 - float(monthly_usage)} Гб", parse_mode="HTML")
+    except Exception as e:
+        logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
+        await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
+@dp.callback_query(F.data == "show_users")
+async def show_users(callback_query: CallbackQuery):
+    await callback_query.answer()
+    try:
+        users = vpn_service.get_all_users()
+        if not users:
+            await callback_query.message.answer("Пользователей не найдено.", parse_mode="HTML")
+            return
+        text = "<b>Список пользователей:</b>\n\n"
+        for user in users:
+            text += f"ID: {user['telegram_id']}, Имя: {user['username']}, Дата регистрации: {user['created_at']}\n"
+        await callback_query.message.answer(text, parse_mode="HTML")
+    except Exception as e:
+        logger.error(f"Error occurred while fetching users: {str(e)}")
+        await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
+
+# @dp.callback_query(F.data == "create_invite")
+# async def create_invite(callback_query: CallbackQuery):
 
 @dp.callback_query(F.data == "android_instruction")
 async def android_instruction(callback_query: CallbackQuery):
@@ -132,6 +185,7 @@ async def windows_instruction(callback_query: CallbackQuery):
             f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
             f"4. Сохраните конфигурацию и активируйте её.")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
+
 @dp.callback_query(F.data == "macos_instruction")
 async def macos_instruction(callback_query: CallbackQuery):
     await callback_query.answer()

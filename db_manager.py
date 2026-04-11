@@ -18,6 +18,7 @@ class DatabaseManager:
                     username TEXT UNIQUE NOT NULL,
                     telegram_id TEXT UNIQUE NOT NULL,
                     uuid TEXT UNIQUE NOT NULL,
+                    invite_code TEXT UNIQUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT 1
                               )
