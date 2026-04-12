@@ -181,7 +181,7 @@ async def show_users(callback_query: CallbackQuery):
             return
         text = "<b>Список пользователей:</b>\n\n"
         for user in users:
-            text += f"ID: {user['telegram_id']}, Имя: {user['username']}, Дата регистрации: {user['created_at']}\n"
+            text += f"ID: {user[3]}, Имя: {user[1]}, Дата регистрации: {user[4]}\n"
         await callback_query.message.answer(text, parse_mode="HTML")
     except Exception as e:
         logger.error(f"Error occurred while fetching users: {str(e)}")
