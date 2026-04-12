@@ -77,3 +77,6 @@ class VpnService:
         return self.db_manager.get_code(code)
     def mark_code_as_used(self, code):
         self.db_manager.mark_code_as_used(code)
+    def generate_invite_code(self):
+        '''Generates a new invite code using the database manager.'''
+        return self.db_manager.generate_invite_code()
