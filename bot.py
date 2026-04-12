@@ -4,6 +4,8 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQu
 from aiogram.filters import Command
 from aiogram import F
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.context import FSMContext
 from core import VpnService 
 import logging
 from dotenv import load_dotenv
@@ -33,7 +35,9 @@ admin_builder = InlineKeyboardBuilder()
 admin_builder.row(InlineKeyboardButton(text=" 📊 Общий трафик", callback_data="show_stats"), 
                   InlineKeyboardButton(text="➕ Создать инвайт", callback_data="create_invite"), 
                   InlineKeyboardButton(text=" 👥 Список юзеров", callback_data="show_users"), 
-                  InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"), width=2)
+                  width=2)
+registration_builder = InlineKeyboardBuilder()
+registration_builder.row(InlineKeyboardButton(text="🔓 Активировать доступ", callback_data="register"))
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -42,11 +46,15 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 
+class RegistrationState(StatesGroup):
+    waiting_for_code = State()
+
+
 @dp.message(Command("start"))
-async def cmd_start(message: types.Message):
+async def cmd_start(message: types.Message, state: FSMContext):
     user_info = vpn_service.get_user_info(str(message.from_user.id))
-    if user_info is None:
-        await message.answer("Привет! Добро пожаловать в бот! Похоже, вы новый пользователь. Нажмите кнопку ниже, чтобы получить свой VPN ключ.", reply_markup=start_builder.as_markup())
+    if user_info is None or not user_info['is_active']:
+        await message.answer("Привет! Добро пожаловать в бот! Похоже, вы новый пользователь. Нажмите кнопку ниже, чтобы активировать доступ.", reply_markup=registration_builder.as_markup())
     else:
         text = (f"Привет! Добро пожаловать в бот! Информация о пользователе:\n\n" 
                          f"Имя: {user_info['username']}\n"
@@ -108,15 +116,39 @@ async def show_profile(callback_query: CallbackQuery):
         if user_info is None:
             await callback_query.message.answer("Пользователь не найден. Пожалуйста, нажмите кнопку 'Основная', чтобы создать профиль.", parse_mode="HTML")
             return
+        status = "Активен" if user_info['is_active'] else "Неактивен"
         text = (f"👤 Имя: {user_info['username']}\n"
                          f"🌐 IP сервера: {vpn_service.server_ip}\n"
-                         f"🔋 Статус: {user_info['is_active']}\n"
+                         f"🔋 Статус: {status}\n"
                          f"⏳ Срок действия: Бессрочно\n"
                     )
         await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
         logger.error(f"Error occurred while fetching user profile: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
+
+@dp.callback_query(F.data == "register")
+async def register_user(callback_query: CallbackQuery, state: FSMContext):
+    await callback_query.answer()
+    await state.set_state(RegistrationState.waiting_for_code)
+    await callback_query.message.answer("Пожалуйста, введите ваш код для регистрации:", parse_mode="HTML")
+
+@dp.message(RegistrationState.waiting_for_code)
+async def process_code(message: types.Message, state: FSMContext):
+    code = message.text.strip()
+    if vpn_service.get_code(code):
+        vpn_service.mark_code_as_used(code)
+    else:
+        await message.answer("Неверный код. Пожалуйста, попробуйте еще раз.", parse_mode="HTML")
+        return
+    try:
+        uuid = vpn_service.register_new_user(message.from_user.username or message.from_user.first_name, str(message.from_user.id))
+        await message.answer("Регистрация прошла успешно! Теперь вы можете получить свои VPN ключи в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
+    except Exception as e:
+        logger.error(f"Error occurred during registration: {str(e)}")
+        await message.answer(f"Ошибка при регистрации: {str(e)}", parse_mode="HTML")
+    finally:
+        await state.clear()
 
 @dp.message(Command("admin"))
 async def show_stats(message: types.Message):
@@ -155,8 +187,15 @@ async def show_users(callback_query: CallbackQuery):
         logger.error(f"Error occurred while fetching users: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
 
-# @dp.callback_query(F.data == "create_invite")
-# async def create_invite(callback_query: CallbackQuery):
+@dp.callback_query(F.data == "create_invite")
+async def create_invite(callback_query: CallbackQuery):
+    await callback_query.answer()
+    try:
+        code = vpn_service.generate_invite_code()
+        await callback_query.message.answer(f"Новый инвайт код: <code>{code}</code>", parse_mode="HTML")
+    except Exception as e:
+        logger.error(f"Error occurred while creating invite code: {str(e)}")
+        await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
 
 @dp.callback_query(F.data == "android_instruction")
 async def android_instruction(callback_query: CallbackQuery):

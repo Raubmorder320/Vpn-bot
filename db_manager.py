@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +19,27 @@ class DatabaseManager:
                     username TEXT UNIQUE NOT NULL,
                     telegram_id TEXT UNIQUE NOT NULL,
                     uuid TEXT UNIQUE NOT NULL,
-                    invite_code TEXT UNIQUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT 1
                               )
             ''')
-
+    def create_invite_table(self):
+        with self.conn:
+            self.conn.execute('''
+                CREATE TABLE IF NOT EXISTS invites (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    code TEXT UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    is_used BOOLEAN DEFAULT 0
+                )
+            ''')
+    def generate_invite_code(self):
+        code = "VPN_" + str(uuid.uuid4())
+        with self.conn:
+            self.conn.execute('''
+                INSERT INTO invites (code) VALUES (?)
+            ''', (code,))
+        return code
     def add_user(self, username, telegram_id, uuid):
         with self.conn:
             self.conn.execute('''
@@ -53,3 +69,12 @@ class DatabaseManager:
         cursor = self.conn.cursor()
         cursor.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,))
         return cursor.fetchone()
+    def get_code(self, code):
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM invites WHERE code = ?', (code,))
+        return cursor.fetchone()
+    def mark_code_as_used(self, code):
+        with self.conn:
+            self.conn.execute('''
+                UPDATE invites SET is_used = 1 WHERE code = ?
+            ''', (code,))

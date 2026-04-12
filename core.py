@@ -60,6 +60,7 @@ class VpnService:
                 'username': user['username'],
                 'telegram_id': user['telegram_id'],
                 'created_at': user['created_at'],
+                'is_active': user['is_active']
             }
         else:
             return None
@@ -69,3 +70,10 @@ class VpnService:
     def vnstat_monthly_usage(self):
         '''Retrieves monthly network usage statistics using vnstat.'''
         return self.manager.vnstat_monthly_usage()
+    def get_all_users(self):
+        '''Retrieves a list of all users from the database.'''
+        return self.db_manager.get_all_users()
+    def get_code(self, code):
+        return self.db_manager.get_code(code)
+    def mark_code_as_used(self, code):
+        self.db_manager.mark_code_as_used(code)
