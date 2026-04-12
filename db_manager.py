@@ -10,6 +10,7 @@ class DatabaseManager:
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.create_table()
+        self.create_invite_table()
 
     def create_table(self):
         with self.conn:
