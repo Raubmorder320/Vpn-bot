@@ -130,20 +130,23 @@ async def show_profile(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "register")
 async def register_user(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.answer()
+    if vpn_service.get_user_info(str(callback_query.from_user.id)):
+        await callback_query.message.answer("Вы уже активированы. Пожалуйста, нажмите кнопку 'Основная', чтобы получить свои VPN ключи.", parse_mode="HTML", reply_markup=start_builder.as_markup())
+        return
     await state.set_state(RegistrationState.waiting_for_code)
     await callback_query.message.answer("Пожалуйста, введите ваш код для регистрации:", parse_mode="HTML")
 
 @dp.message(RegistrationState.waiting_for_code)
 async def process_code(message: types.Message, state: FSMContext):
     code = message.text.strip()
-    if vpn_service.get_code(code):
-        vpn_service.mark_code_as_used(code)
-    else:
+    if not vpn_service.get_code(code):
         await message.answer("Неверный код. Пожалуйста, попробуйте еще раз.", parse_mode="HTML")
         return
+
     try:
         uuid = vpn_service.register_new_user(message.from_user.username or message.from_user.first_name, str(message.from_user.id))
         await message.answer("Регистрация прошла успешно! Теперь вы можете получить свои VPN ключи в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
+        vpn_service.mark_code_as_used(code)
     except Exception as e:
         logger.error(f"Error occurred during registration: {str(e)}")
         await message.answer(f"Ошибка при регистрации: {str(e)}", parse_mode="HTML")
