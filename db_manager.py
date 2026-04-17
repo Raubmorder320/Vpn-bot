@@ -22,7 +22,7 @@ class DatabaseManager:
                     uuid TEXT UNIQUE NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT 1,
-                    traffic_usage INTEGER DEFAULT 0,
+                    traffic_usage INTEGER DEFAULT 0
                               )
             ''')
     def create_invite_table(self):
