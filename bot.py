@@ -263,6 +263,5 @@ async def traffic_update():
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.create_task(traffic_update())
+    asyncio.create_task(traffic_update())
     asyncio.run(dp.start_polling(bot))
