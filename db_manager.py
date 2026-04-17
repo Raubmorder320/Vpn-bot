@@ -58,9 +58,9 @@ class DatabaseManager:
                 'username': user[1],
                 'telegram_id': user[2],
                 'uuid': user[3],
-                'created_at': user[4],
-                'is_active': user[5],
-                'trafic_usage': user[6]
+                'created_at': user[5],
+                'is_active': user[6],
+                'trafic_usage': user[4]
             }
         return None
 
