@@ -177,7 +177,8 @@ async def show_stats(callback_query: CallbackQuery):
         traffic = [(user[1], user[6]) for user in users]  # Convert to GB
         text = "<b>Статистика использования трафика:</b>\n\n"
         for username, usage in traffic:
-            text += f"Пользователь: {username}, Использованный трафик: {usage:.2f} Гб\n"
+            usage_gb = usage / (1024 * 1024 * 1024)  # Convert to GB
+            text += f"Пользователь: {username}, Использованный трафик: {usage_gb:.2f} Гб\n"
         text += f"\n<b>Общий трафик за сегодня:</b> {daily_usage} Гб\n"
         text += f"<b>Общий трафик за этот месяц:</b> {monthly_usage} Гб\n"
         text += f"<b>Остаток трафика:</b> {1000 - float(monthly_usage):.2f} Гб\n"
