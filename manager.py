@@ -104,7 +104,7 @@ class Manager:
             if result.returncode == 0:
                 try:
                     data = json.loads(result.stdout)
-                    total_traffic += data.get('stat', [{}])[0].get('value', 0)
+                    total_traffic += data.get('stat', {}).get('value', 0)
                 except Exception:
                     continue
             else:
