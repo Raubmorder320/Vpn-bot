@@ -99,7 +99,7 @@ class Manager:
         traffic_type = ['downlink', 'uplink']
         total_traffic = 0
         for t in traffic_type:
-            cmd = ['xray', 'api','stats',f'--server={self.data["inbounds"][2]["listen"]}:{self.data["inbounds"][2]["port"]}',f'--name="user>>>{username}>>>traffic>>>{t}"', '--reset']
+            cmd = ['xray', 'api','stats',f'--server={self.data["inbounds"][2]["listen"]}:{self.data["inbounds"][2]["port"]}',f'--name=user>>>{username}>>>traffic>>>{t}', '--reset']
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:
                 try:
