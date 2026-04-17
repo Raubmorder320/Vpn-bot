@@ -174,7 +174,7 @@ async def show_stats(callback_query: CallbackQuery):
         daily_usage = vpn_service.vnstat_daily_usage()
         monthly_usage = vpn_service.vnstat_monthly_usage()
         users = vpn_service.get_all_users()
-        traffic = [(user[1], user[4] / (1024 * 1024 * 1024)) for user in users]  # Convert to GB
+        traffic = [(user[1], user[4]) for user in users]  # Convert to GB
         text = "<b>Статистика использования трафика:</b>\n\n"
         for username, usage in traffic:
             text += f"Пользователь: {username}, Использованный трафик: {usage:.2f} Гб\n"
