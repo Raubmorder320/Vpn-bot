@@ -84,6 +84,6 @@ class DatabaseManager:
     def add_traffic_usage(self, telegram_id, usage):
         with self.conn:
             self.conn.execute('''
-                UPDATE users SET trafic_usage = trafic_usage + ? WHERE telegram_id = ?
+                UPDATE users SET traffic_usage = traffic_usage + ? WHERE telegram_id = ?
             ''', (usage, telegram_id))
         
