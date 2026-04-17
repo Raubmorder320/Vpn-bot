@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
@@ -121,6 +123,7 @@ async def show_profile(callback_query: CallbackQuery):
                          f"🌐 IP сервера: {vpn_service.server_ip}\n"
                          f"🔋 Статус: {status}\n"
                          f"⏳ Срок действия: Бессрочно\n"
+                         f"📊 Использованный трафик: {user_info['trafic_usage']/(1024*1024*1024):.2f} Гб\n"
                     )
         await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
@@ -170,7 +173,16 @@ async def show_stats(callback_query: CallbackQuery):
     try:
         daily_usage = vpn_service.vnstat_daily_usage()
         monthly_usage = vpn_service.vnstat_monthly_usage()
-        await callback_query.message.answer(f"За сегодня использовано {daily_usage} Гб\nЗа этот месяц использовано {monthly_usage} Гб\n\nОстаток трафика: {1000 - float(monthly_usage)} Гб", parse_mode="HTML")
+        users = vpn_service.get_all_users()
+        traffic = [(user[1], user[6] / (1024 * 1024 * 1024)) for user in users]  # Convert to GB
+        text = "<b>Статистика использования трафика:</b>\n\n"
+        for username, usage in traffic:
+            text += f"Пользователь: {username}, Использованный трафик: {usage:.2f} Гб\n"
+        text += f"\n<b>Общий трафик за сегодня:</b> {daily_usage} Гб\n"
+        text += f"<b>Общий трафик за этот месяц:</b> {monthly_usage} Гб\n"
+        text += f"<b>Остаток трафика:</b> {1000 - float(monthly_usage):.2f} Гб\n"
+        await callback_query.message.answer(text, parse_mode="HTML")
+        
     except Exception as e:
         logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
@@ -238,6 +250,18 @@ async def macos_instruction(callback_query: CallbackQuery):
             f"4. Сохраните конфигурацию и активируйте её.")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
+async def traffic_update():
+    while True:
+        try:
+            logger.info("Updating traffic usage for all users...")
+            vpn_service.update_traffic_usage()
+            logger.info("Traffic usage updated successfully.")
+        except Exception as e:
+            logger.error(f"Error occurred while updating traffic usage: {str(e)}")
+        await asyncio.sleep(30)  # Update every 10 minutes
+
+
 if __name__ == '__main__':
-    from asyncio import run
-    run(dp.start_polling(bot))
+    loop = asyncio.get_event_loop()
+    loop.create_task(traffic_update())
+    asyncio.run(dp.start_polling(bot))

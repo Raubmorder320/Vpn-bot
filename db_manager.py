@@ -20,6 +20,7 @@ class DatabaseManager:
                     username TEXT UNIQUE NOT NULL,
                     telegram_id TEXT UNIQUE NOT NULL,
                     uuid TEXT UNIQUE NOT NULL,
+                    trafic_usage INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     is_active BOOLEAN DEFAULT 1
                               )
@@ -58,7 +59,8 @@ class DatabaseManager:
                 'telegram_id': user[2],
                 'uuid': user[3],
                 'created_at': user[4],
-                'is_active': user[5]
+                'is_active': user[5],
+                'trafic_usage': user[6]
             }
         return None
 
@@ -79,3 +81,9 @@ class DatabaseManager:
             self.conn.execute('''
                 UPDATE invites SET is_used = 1 WHERE code = ?
             ''', (code,))
+    def add_traffic_usage(self, telegram_id, usage):
+        with self.conn:
+            self.conn.execute('''
+                UPDATE users SET trafic_usage = trafic_usage + ? WHERE telegram_id = ?
+            ''', (usage, telegram_id))
+        

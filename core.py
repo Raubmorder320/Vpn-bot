@@ -80,3 +80,9 @@ class VpnService:
     def generate_invite_code(self):
         '''Generates a new invite code using the database manager.'''
         return self.db_manager.generate_invite_code()
+    def update_traffic_usage(self):
+        '''Updates the traffic usage for a user in the database.'''
+        users = self.db_manager.get_all_users()
+        for user in users:
+            usage = self.manager.get_xray_trafic(user[1])  # Assuming username is at index 1
+            self.db_manager.add_traffic_usage(user[2], usage)  # Assuming telegram_id

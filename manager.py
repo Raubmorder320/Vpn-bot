@@ -95,6 +95,15 @@ class Manager:
             return round((data['interfaces'][0]['traffic']['month'][-1]['rx'] + data['interfaces'][0]['traffic']['month'][-1]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
+    def get_xray_trafic(self, username):
+        downlink=subprocess.run(['xray', 'api','stats',f'--server={self.data['inbounds'][2]['listen']}:{self.data["inbounds"][2]["port"]}',f'--name="user>>>{username}>>>traffic>>>downlink"', '--reset'], capture_output=True, text=True)
+        uplink=subprocess.run(['xray', 'api','stats',f'--server={self.data['inbounds'][2]['listen']}:{self.data["inbounds"][2]["port"]}',f'--name="user>>>{username}>>>traffic>>>uplink"', '--reset'], capture_output=True, text=True)
+        if downlink.returncode == 0 and uplink.returncode == 0:
+            downlink_data = json.loads(downlink.stdout)
+            uplink_data = json.loads(uplink.stdout)
+            return (downlink_data['stat'][0]['value'] + uplink_data['stat'][0]['value'])  
+        else:
+            raise Exception("Failed to retrieve xray traffic data: " + downlink.stderr + uplink.stderr)
         
 
 
