@@ -20,9 +20,9 @@ class DatabaseManager:
                     username TEXT UNIQUE NOT NULL,
                     telegram_id TEXT UNIQUE NOT NULL,
                     uuid TEXT UNIQUE NOT NULL,
-                    trafic_usage INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    is_active BOOLEAN DEFAULT 1
+                    is_active BOOLEAN DEFAULT 1,
+                    trafic_usage INTEGER DEFAULT 0,
                               )
             ''')
     def create_invite_table(self):
@@ -58,9 +58,9 @@ class DatabaseManager:
                 'username': user[1],
                 'telegram_id': user[2],
                 'uuid': user[3],
-                'created_at': user[5],
-                'is_active': user[6],
-                'trafic_usage': user[4]
+                'created_at': user[4],
+                'is_active': user[5],
+                'trafic_usage': user[6]
             }
         return None
 
