@@ -96,14 +96,24 @@ class Manager:
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
     def get_xray_trafic(self, username):
-        downlink=subprocess.run(['xray', 'api','stats',f'--server={self.data['inbounds'][2]['listen']}:{self.data["inbounds"][2]["port"]}',f'--name="user>>>{username}>>>traffic>>>downlink"', '--reset'], capture_output=True, text=True)
-        uplink=subprocess.run(['xray', 'api','stats',f'--server={self.data['inbounds'][2]['listen']}:{self.data["inbounds"][2]["port"]}',f'--name="user>>>{username}>>>traffic>>>uplink"', '--reset'], capture_output=True, text=True)
-        if downlink.returncode == 0 and uplink.returncode == 0:
-            downlink_data = json.loads(downlink.stdout)
-            uplink_data = json.loads(uplink.stdout)
-            return (downlink_data['stat'][0]['value'] + uplink_data['stat'][0]['value'])  
-        else:
-            raise Exception("Failed to retrieve xray traffic data: " + downlink.stderr + uplink.stderr)
+        traffic_type = ['downlink', 'uplink']
+        total_traffic = 0
+        for t in traffic_type:
+            cmd = ['xray', 'api','stats',f'--server={self.data["inbounds"][2]["listen"]}:{self.data["inbounds"][2]["port"]}',f'--name="user>>>{username}>>>traffic>>>{t}"', '--reset']
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                try:
+                    data = json.loads(result.stdout)
+                    total_traffic += data.get('stat', [{}])[0].get('value', 0)
+                except Exception:
+                    continue
+            else:
+                if 'not found' in result.stderr.lower():
+                    logger.info(f"No traffic data found for user {username} and type {t}. Assuming 0.")
+                    continue
+                else:
+                    raise Exception(f"Failed to retrieve xray traffic data for user {username} and type {t}: " + result.stderr)
+        return total_traffic
         
 
 
