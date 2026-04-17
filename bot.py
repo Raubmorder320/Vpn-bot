@@ -261,7 +261,10 @@ async def traffic_update():
             logger.error(f"Error occurred while updating traffic usage: {str(e)}")
         await asyncio.sleep(30)  # Update every 10 minutes
 
+async def main():
+    logger.info("Bot is starting up...")
+    asyncio.create_task(traffic_update())
+    await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    asyncio.create_task(traffic_update())
-    asyncio.run(dp.start_polling(bot))
+    asyncio.run(main())
