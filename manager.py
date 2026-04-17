@@ -105,6 +105,7 @@ class Manager:
                 try:
                     data = json.loads(result.stdout)
                     total_traffic += data.get('stat', {}).get('value', 0)
+                    logger.info(f"{data}")
                 except Exception:
                     continue
             else:
