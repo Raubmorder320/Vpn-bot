@@ -64,8 +64,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
         text = (f"<b>🐹 Hamsterdam на базе!</b>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"Статус: 🟢 <b>Подключен</b>\n"
-            f"Сервер: 🇳🇱 Нидерланды (Amsterdam)\n\n"
-            f"Твой трафик за сегодня: <code>{user_info['traffic_today']} ГБ</code>\n"
+            f"Сервер: 🇳🇱 Нидерланды\n\n"
+            f"Твой трафик за месяц: <code>{user_info['traffic_usage']} ГБ</code>\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"Нужна помощь с настройкой? Жми на <b>Инструкцию</b>."
                     )
