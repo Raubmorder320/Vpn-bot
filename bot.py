@@ -85,7 +85,7 @@ async def get_key(callback_query: CallbackQuery):
         f"<code>{link}</code>\n\n"
         "<i>После копирования вставь ссылку в своё приложение для VPN.</i>"
         )
-        await callback_query.message.answer(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
+        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
         logger.error(f"Error occurred while fetching VPN config: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}")
@@ -102,7 +102,7 @@ async def get_emergency_key(callback_query: CallbackQuery):
         f"<code>{link}</code>\n\n"
         "<i>Этот ключ использует альтернативный способ обхода блокировок.</i>"
         )
-        await callback_query.message.answer(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
+        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
         logger.error(f"Error occurred while fetching emergency VPN config: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}")
