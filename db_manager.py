@@ -60,7 +60,7 @@ class DatabaseManager:
                 'uuid': user[3],
                 'created_at': user[4],
                 'is_active': user[5],
-                'trafic_usage': user[6]
+                'traffic_usage': user[6]
             }
         return None
 

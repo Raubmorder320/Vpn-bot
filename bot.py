@@ -123,11 +123,11 @@ async def show_profile(callback_query: CallbackQuery):
                          f"🌐 IP сервера: {vpn_service.server_ip}\n"
                          f"🔋 Статус: {status}\n"
                          f"⏳ Срок действия: Бессрочно\n"
-                         f"📊 Использованный трафик: {user_info['trafic_usage']/(1024*1024*1024):.2f} Гб\n"
+                         f"📊 Использованный трафик: {user_info['traffic_usage']/(1024*1024*1024):.2f} Гб\n"
                     )
         await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
-        logger.error(f"Error occurred while fetching user profile: {str(e)}")
+        logger.error(f"Error occurred while fetching user profile: {str(e)}, User Info: {user_info}")
         await callback_query.message.answer(f"Error: {str(e)}", parse_mode="HTML")
 
 @dp.callback_query(F.data == "register")
@@ -174,7 +174,7 @@ async def show_stats(callback_query: CallbackQuery):
         daily_usage = vpn_service.vnstat_daily_usage()
         monthly_usage = vpn_service.vnstat_monthly_usage()
         users = vpn_service.get_all_users()
-        traffic = [(user[1], user[6]) for user in users]  # Convert to GB
+        traffic = [(user[1], user[6]) for user in users]
         text = "<b>Статистика использования трафика:</b>\n\n"
         for username, usage in traffic:
             usage_gb = usage / (1024 * 1024 * 1024)  # Convert to GB
@@ -259,7 +259,7 @@ async def traffic_update():
             logger.info("Traffic usage updated successfully.")
         except Exception as e:
             logger.error(f"Error occurred while updating traffic usage: {str(e)}")
-        await asyncio.sleep(30)  # Update every 10 minutes
+        await asyncio.sleep(600)  # Update every 10 minutes
 
 async def main():
     logger.info("Bot is starting up...")
