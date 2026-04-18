@@ -134,7 +134,7 @@ async def show_profile(callback_query: CallbackQuery):
             return
         status = "🟢 Активен" if user_info['is_active'] else "🔴 Неактивен"
         text = (f"👤 Имя: {user_info['username']}\n"
-                        f"🌍 Локация: Нидерланды 🇳🇱"
+                        f"🌍 Локация: Нидерланды 🇳🇱\n"
                          f"🌐 IP сервера: {vpn_service.server_ip}\n"
                          f"🔋 Статус: {status}\n"
                          f"⏳ Срок действия: Бессрочно\n"
@@ -233,37 +233,37 @@ async def create_invite(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "android_instruction")
 async def android_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = ("🤖 Инструкция для Android"
-            "1. Скачай v2rayNG из Play Store или GitHub."
-            "2. Скопируй ссылку из бота."
-            "3. В приложении нажми '+' вверху -> 'Импортировать из буфера обмена'."
+    text = ("🤖 Инструкция для Android\n"
+            "1. Скачай v2rayNG из Play Store или GitHub.\n"
+            "2. Скопируй ссылку из бота.\n"
+            "3. В приложении нажми '+' вверху -> 'Импортировать из буфера обмена'.\n"
             "4. Нажми на иконку щита (или V в кружочке) для подключения.")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "ios_instruction")
 async def ios_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = ("🍎 Инструкция для iOS"
-            "1. Скачай V2Box или Streisand из App Store (они бесплатные и поддерживают Reality)."
-            "2. Скопируй ссылку из бота."
-            "3. В приложении нажми \"Configs\" -> "+" -> \"Import vless link from clipboard\""
+    text = ("🍎 Инструкция для iOS\n"
+            "1. Скачай V2Box или Streisand из App Store (они бесплатные и поддерживают Reality).\n"
+            "2. Скопируй ссылку из бота.\n"
+            "3. В приложении нажми \"Configs\" -> "+" -> \"Import vless link from clipboard\"\n"
             "4. Вернись на главный экран и нажми \"Connect\".")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "windows_instruction")
 async def windows_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = ("💻 Инструкция для Windows"
-            "1. Скачай v2rayN (GitHub) или Nekoray."
-            "2. Распакуй архив и запусти .exe."
-            "3. Скопируй ссылку, в приложении нажми \"Серверы\" -> \"Импортировать из буфера обмена\"."
+    text = ("💻 Инструкция для Windows\n"
+            "1. Скачай v2rayN (GitHub) или Nekoray.\n"
+            "2. Распакуй архив и запусти .exe.\n"
+            "3. Скопируй ссылку, в приложении нажми \"Серверы\" -> \"Импортировать из буфера обмена\".\n"
             "4. Нажми правой кнопкой на значок в трее -> \"Режим системного прокси\" -> \"Включить\".")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 @dp.callback_query(F.data == "macos_instruction")
 async def macos_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = ("🍏 Инструкция для macOS"
-            "1. Скачай V2Box или FoXray из App Store."
-            "2. Скопируй ссылку."
+    text = ("🍏 Инструкция для macOS\n"
+            "1. Скачай V2Box или FoXray из App Store.\n"
+            "2. Скопируй ссылку.\n"
             "3. В приложении нажми \"+\" (или \"Import\") и вставь ссылку из буфера."
             "4. Нажми кнопку подключения.")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
