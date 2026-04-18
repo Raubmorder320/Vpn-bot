@@ -12,7 +12,7 @@ from core import VpnService
 import logging
 from dotenv import load_dotenv
 import os
-
+import datetime
 
 load_dotenv()
 
@@ -22,8 +22,8 @@ vpn_service = VpnService(os.getenv("CONFIG_PATH"), os.getenv("DB_PATH"))
 start_builder = InlineKeyboardBuilder()
 start_builder.row(InlineKeyboardButton(text="🚀Основная", callback_data="main_key"), 
                   InlineKeyboardButton(text="🆘 Дополнительная", callback_data="emergency_key"),
-                  InlineKeyboardButton(text="👤 Профиль", callback_data="profile"),
-                  InlineKeyboardButton(text="ℹ️ Инструкция", callback_data="instruction"), width=2)
+                  InlineKeyboardButton(text="🐹 Профиль", callback_data="profile"),
+                  InlineKeyboardButton(text="❓ Как настроить", callback_data="instruction"), width=2)
 back_button = InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")
 instructions_builder = InlineKeyboardBuilder()
 instructions_builder.row(back_button, InlineKeyboardButton(text="Android", callback_data="android_instruction"), 
@@ -56,12 +56,18 @@ class RegistrationState(StatesGroup):
 async def cmd_start(message: types.Message, state: FSMContext):
     user_info = vpn_service.get_user_info(str(message.from_user.id))
     if user_info is None or not user_info['is_active']:
-        await message.answer("Привет! Добро пожаловать в бот! Похоже, вы новый пользователь. Нажмите кнопку ниже, чтобы активировать доступ.", reply_markup=registration_builder.as_markup())
+        await message.answer("<b>Привет! На связи Hamsterdam 🐹</b>"
+            "Твой персональный туннель в свободный интернет."
+            "Нажми кнопку ниже, чтобы получить доступ.", reply_markup=registration_builder.as_markup())
+    
     else:
-        text = (f"Привет! Добро пожаловать в бот! Информация о пользователе:\n\n" 
-                         f"Имя: {user_info['username']}\n"
-                         f"ID: {user_info['telegram_id']}\n"
-                         f"Дата регистрации: {user_info['created_at']}\n"
+        text = (f"<b>🐹 Hamsterdam на базе!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"Статус: 🟢 <b>Подключен</b>\n"
+            f"Сервер: 🇳🇱 Нидерланды (Amsterdam)\n\n"
+            f"Твой трафик за сегодня: <code>{user_info['traffic_today']} ГБ</code>\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"Нужна помощь с настройкой? Жми на <b>Инструкцию</b>."
                     )
         await message.answer(text, parse_mode="HTML", reply_markup=start_builder.as_markup())
 
@@ -74,10 +80,12 @@ async def get_key(callback_query: CallbackQuery):
         name = callback_query.from_user.username or callback_query.from_user.first_name
         link = vpn_service.get_user_config(str(callback_query.from_user.id), name)
         text = (
-            "<b>Вот ваша основная ссылка для подключения к VPN.</b>\nДля копирования нажмите на неё.\n\n"
-            f"<code>{link}</code>\n\n"
+        "🐹 <b>Твоя основная ссылка</b>\n"
+        "Нажми на код ниже, чтобы скопировать его в буфер обмена:\n\n"
+        f"<code>{link}</code>\n\n"
+        "<i>После копирования вставь ссылку в своё приложение для VPN.</i>"
         )
-        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
+        await callback_query.message.answer(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
         logger.error(f"Error occurred while fetching VPN config: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}")
@@ -89,10 +97,12 @@ async def get_emergency_key(callback_query: CallbackQuery):
         name = callback_query.from_user.username or callback_query.from_user.first_name
         link = vpn_service.get_user_config(str(callback_query.from_user.id), name, inbound_index=1)
         text = (
-            "<b>Вот ваша аварийная ссылка для подключения к VPN.</b>\n\n"
-            f"<code>{link}</code>\n\n"
+        "🔄 <b>Резервный канал</b>\n"
+        "Используй эту ссылку, если основной канал работает медленно или не подключается:\n\n"
+        f"<code>{link}</code>\n\n"
+        "<i>Этот ключ использует альтернативный способ обхода блокировок.</i>"
         )
-        await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
+        await callback_query.message.answer(text, parse_mode="HTML", reply_markup=menu_builder.as_markup())
     except Exception as e:
         logger.error(f"Error occurred while fetching emergency VPN config: {str(e)}")
         await callback_query.message.answer(f"Error: {str(e)}")
@@ -102,13 +112,17 @@ async def get_emergency_key(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "instruction")
 async def show_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("Выберите вашу операционную систему:", parse_mode="HTML", reply_markup=instructions_builder.as_markup())
+    await callback_query.message.edit_text("⚙️ <b>Настройка подключения</b>\n"
+                        "Выбери устройство, на котором будешь использовать VPN:", 
+                           parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 
 @dp.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback_query: CallbackQuery):
     await callback_query.answer()
-    await callback_query.message.edit_text("Вы находитесь в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
+    await callback_query.message.edit_text(    "🐹 <b>Hamsterdam на связи!</b>\n"
+        "Все системы работают штатно. Выбери нужное действие в меню ниже:",
+        parse_mode="HTML", reply_markup=start_builder.as_markup())
 
 @dp.callback_query(F.data == "profile")
 async def show_profile(callback_query: CallbackQuery):
@@ -116,10 +130,11 @@ async def show_profile(callback_query: CallbackQuery):
     try:
         user_info = vpn_service.get_user_info(str(callback_query.from_user.id))
         if user_info is None:
-            await callback_query.message.answer("Пользователь не найден. Пожалуйста, нажмите кнопку 'Основная', чтобы создать профиль.", parse_mode="HTML")
+            await callback_query.message.answer("🐹 Похоже, мы еще не знакомы. Нажми \"Основная\", чтобы создать аккаунт.", parse_mode="HTML")
             return
-        status = "Активен" if user_info['is_active'] else "Неактивен"
+        status = "🟢 Активен" if user_info['is_active'] else "🔴 Неактивен"
         text = (f"👤 Имя: {user_info['username']}\n"
+                        f"🌍 Локация: Нидерланды 🇳🇱"
                          f"🌐 IP сервера: {vpn_service.server_ip}\n"
                          f"🔋 Статус: {status}\n"
                          f"⏳ Срок действия: Бессрочно\n"
@@ -134,21 +149,23 @@ async def show_profile(callback_query: CallbackQuery):
 async def register_user(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.answer()
     if vpn_service.get_user_info(str(callback_query.from_user.id)):
-        await callback_query.message.answer("Вы уже активированы. Пожалуйста, нажмите кнопку 'Основная', чтобы получить свои VPN ключи.", parse_mode="HTML", reply_markup=start_builder.as_markup())
+        await callback_query.message.answer("🐹 Спокойно, ты уже с нами! Ключи лежат в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
         return
     await state.set_state(RegistrationState.waiting_for_code)
-    await callback_query.message.answer("Пожалуйста, введите ваш код для регистрации:", parse_mode="HTML")
+    await callback_query.message.answer("🐹 Пожалуйста, введите секретный код для входа в Hamsterdamю"
+                                        "Получить код можно у администратора сервера "
+                                        , parse_mode="HTML")
 
 @dp.message(RegistrationState.waiting_for_code)
 async def process_code(message: types.Message, state: FSMContext):
     code = message.text.strip()
     if not vpn_service.get_code(code):
-        await message.answer("Неверный код. Пожалуйста, попробуйте еще раз.", parse_mode="HTML")
+        await message.answer("🐹 <b>Код неверный.</b> Убедись, что нет лишних пробелов, и попробуй ещё раз.", parse_mode="HTML")
         return
 
     try:
         uuid = vpn_service.register_new_user(message.from_user.username or message.from_user.first_name, str(message.from_user.id))
-        await message.answer("Регистрация прошла успешно! Теперь вы можете получить свои VPN ключи в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
+        await message.answer("✨ Готово! Ты в системе. Теперь загляни в меню за ключами.", parse_mode="HTML", reply_markup=start_builder.as_markup())
         vpn_service.mark_code_as_used(code)
     except Exception as e:
         logger.error(f"Error occurred during registration: {str(e)}")
@@ -165,7 +182,7 @@ async def show_stats(message: types.Message):
             logger.error(f"Error occurred while fetching vnstat data: {str(e)}")
             await message.answer(f"Error: {str(e)}", parse_mode="HTML")
     else:
-        await message.answer("У вас нет доступа к этой команде.", parse_mode="HTML")
+        await message.answer("🚫 Сюда хомякам нельзя. Это только для смотрителя тоннеля.", parse_mode="HTML")
 
 @dp.callback_query(F.data == "show_stats")
 async def show_stats(callback_query: CallbackQuery):
@@ -216,43 +233,53 @@ async def create_invite(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "android_instruction")
 async def android_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = (f"Инструкция для Android: \n "
-            f"1. Скачайте и установите приложение XrayR из Google Play Store. \n "
-            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
-            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
-            f"4. Сохраните конфигурацию и активируйте её.")
+    text = ("🤖 Инструкция для Android"
+            "1. Скачай v2rayNG из Play Store или GitHub."
+            "2. Скопируй ссылку из бота."
+            "3. В приложении нажми '+' вверху -> 'Импортировать из буфера обмена'."
+            "4. Нажми на иконку щита (или V в кружочке) для подключения.")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "ios_instruction")
 async def ios_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = (f"Инструкция для iOS: \n "
-            f"1. Скачайте и установите приложение ShadowRay из App Store. \n "
-            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
-            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
-            f"4. Сохраните конфигурацию и активируйте её.")
+    text = ("🍎 Инструкция для iOS"
+            "1. Скачай V2Box или Streisand из App Store (они бесплатные и поддерживают Reality)."
+            "2. Скопируй ссылку из бота."
+            "3. В приложении нажми \"Configs\" -> "+" -> \"Import vless link from clipboard\""
+            "4. Вернись на главный экран и нажми \"Connect\".")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 @dp.callback_query(F.data == "windows_instruction")
 async def windows_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = (f"Инструкция для Windows: \n "
-            f"1. Скачайте и установите приложение XrayR для Windows с официального сайта. \n "
-            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
-            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
-            f"4. Сохраните конфигурацию и активируйте её.")
+    text = ("💻 Инструкция для Windows"
+            "1. Скачай v2rayN (GitHub) или Nekoray."
+            "2. Распакуй архив и запусти .exe."
+            "3. Скопируй ссылку, в приложении нажми \"Серверы\" -> \"Импортировать из буфера обмена\"."
+            "4. Нажми правой кнопкой на значок в трее -> \"Режим системного прокси\" -> \"Включить\".")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 @dp.callback_query(F.data == "macos_instruction")
 async def macos_instruction(callback_query: CallbackQuery):
     await callback_query.answer()
-    text = (f"Инструкция для MacOS: \n "
-            f"1. Скачайте и установите приложение ShadowRay для MacOS с официального сайта. \n "
-            f"2. Откройте приложение и нажмите на кнопку 'Добавить конфигурацию'. \n "
-            f"3. Выберите 'Импортировать из ссылки' и вставьте ваш VPN ключ, который вы получили от бота. \n "
-            f"4. Сохраните конфигурацию и активируйте её.")
+    text = ("🍏 Инструкция для macOS"
+            "1. Скачай V2Box или FoXray из App Store."
+            "2. Скопируй ссылку."
+            "3. В приложении нажми \"+\" (или \"Import\") и вставь ссылку из буфера."
+            "4. Нажми кнопку подключения.")
     await callback_query.message.edit_text(text, parse_mode="HTML", reply_markup=instructions_builder.as_markup())
 
 async def traffic_update():
+    last_reset_month = datetime.datetime.now().month
     while True:
+        current_month = datetime.datetime.now().month
+        if current_month != last_reset_month:
+            try:
+                logger.info("Resetting monthly traffic usage for all users...")
+                vpn_service.reset_all_traffic_usage()
+                last_reset_month = current_month
+                logger.info("Monthly traffic usage reset successfully.")
+            except Exception as e:
+                logger.error(f"Error occurred while resetting monthly traffic usage: {str(e)}")
         try:
             logger.info("Updating traffic usage for all users...")
             vpn_service.update_traffic_usage()

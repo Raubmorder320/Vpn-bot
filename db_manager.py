@@ -86,4 +86,8 @@ class DatabaseManager:
             self.conn.execute('''
                 UPDATE users SET traffic_usage = traffic_usage + ? WHERE telegram_id = ?
             ''', (usage, telegram_id))
-        
+    def reset_all_traffic_usage(self):
+        with self.conn:
+            self.conn.execute('''
+                UPDATE users SET traffic_usage = 0
+            ''')

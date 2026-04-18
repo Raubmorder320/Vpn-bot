@@ -81,3 +81,6 @@ class VpnService:
         for user in users:
             usage = self.manager.get_xray_trafic(user[1])  # Assuming username is at index 1
             self.db_manager.add_traffic_usage(user[2], usage)  # Assuming telegram_id
+    def reset_all_traffic_usage(self):
+        '''Resets the traffic usage for all users in the database.'''
+        self.db_manager.reset_all_traffic_usage()
