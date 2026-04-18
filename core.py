@@ -56,12 +56,7 @@ class VpnService:
         '''Retrieves user information from the database.'''
         user = self.db_manager.get_user_info(telegram_id)
         if user:
-            return {
-                'username': user['username'],
-                'telegram_id': user['telegram_id'],
-                'created_at': user['created_at'],
-                'is_active': user['is_active']
-            }
+            return user
         else:
             return None
     def vnstat_daily_usage(self):
