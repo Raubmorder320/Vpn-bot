@@ -33,6 +33,11 @@ class Manager:
         '''Adds a new user to the configuration with a unique UUID.'''
         user_id = self.generate_uuid()
         for inbound in self.data.get('inbounds', []):
+            settings = inbound.get('settings', {})
+            if 'clients' not in settings:
+                # Если это технический порт (API), просто идем дальше
+                continue
+                
             if not any(client['email'] == username for client in inbound['settings']['clients']):
                 inbound['settings']['clients'].append({
                     'email': username,
