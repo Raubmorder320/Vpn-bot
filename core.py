@@ -34,7 +34,7 @@ class VpnService:
         self.db_manager.add_user(username, telegram_id, uuid)
         if not self.manager.validate_config():
             raise Exception("Invalid configuration after adding user.")
-        self.restart_service()
+        # self.restart_service()
         return uuid
 
     def get_user_config(self, telegram_id, username,inbound_index=0):
