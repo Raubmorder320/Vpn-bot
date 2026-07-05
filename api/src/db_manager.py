@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class DatabaseManager:
     def __init__(self, db_path):
         self.db_path = db_path
-        self.conn = sqlite3.connect(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.create_table()
         self.create_invite_table()
 

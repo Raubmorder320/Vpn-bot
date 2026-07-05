@@ -1,0 +1,6 @@
+aiogram
+python-dotenv
+fastapi
+uvicorn
+grpcio
+grpcio-tools

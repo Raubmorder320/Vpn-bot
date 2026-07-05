@@ -1,2 +1,7 @@
 aiogram
 python-dotenv
+httpx
+fastapi
+uvicorn
+grpcio
+grpcio-tools

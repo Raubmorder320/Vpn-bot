@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  xray:
+    container_name: xray
+    image: teddysun/xray:latest
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - ./xray/config.json:/etc/xray/config.json
+    networks:
+      - vpn_net
+
+  api:
+    build: ./api
+    container_name: vpn_api
+    restart: always
+    depends_on:
+      - xray
+    environment:
+      - XRAY_HOST=xray
+      - XRAY_PORT=10085
+    volumes:
+      -.:/app
+    networks:
+      - vpn_net
+  bot:
+    build: ./bot
+    restart: always
+    container_name: vpn_bot
+    depends_on:
+      - api
+    volumes:
+      - .:/app
+    networks:
+      - vpn_net
+networks:
+  vpn_net:
+    driver: bridge

@@ -4,9 +4,11 @@ import subprocess
 import re
 import os
 import logging
+from api.src.xray_api import stats_pb2, stats_pb2_grpc
+import grpc
+
 
 logger = logging.getLogger(__name__)
-
 
 class Manager:
     def __init__(self, file_path):
@@ -89,7 +91,7 @@ class Manager:
         if result.returncode == 0:
             data = json.loads(result.stdout)
 
-            return round((data['interfaces'][0]['traffic']['day'][-1]['rx'] + data['interfaces'][-1]['traffic']['day'][0]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
+            return data['interfaces'][0]['traffic']['day'][-1]['rx'] + data['interfaces'][-1]['traffic']['day'][0]['tx']
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
     def vnstat_monthly_usage(self):
@@ -97,28 +99,25 @@ class Manager:
         result = subprocess.run(['vnstat', '-m', '--json'], capture_output=True, text=True)
         if result.returncode == 0:
             data = json.loads(result.stdout)
-            return round((data['interfaces'][0]['traffic']['month'][-1]['rx'] + data['interfaces'][0]['traffic']['month'][-1]['tx']) / (1024 * 1024 * 1024), 2)  # Convert to GB
+            return data['interfaces'][0]['traffic']['month'][-1]['rx'] + data['interfaces'][0]['traffic']['month'][-1]['tx'] 
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
     def get_xray_trafic(self, username):
         traffic_type = ['downlink', 'uplink']
         total_traffic = 0
-        for t in traffic_type:
-            cmd = ['xray', 'api','stats',f'--server={self.data["inbounds"][2]["listen"]}:{self.data["inbounds"][2]["port"]}',f'--name=user>>>{username}>>>traffic>>>{t}', '--reset']
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode == 0:
+        with grpc.insecure_channel('localhost:10085') as channel:
+            stub = stats_pb2_grpc.StatsServiceStub(channel)
+            for t in traffic_type:
+                stat_name = f"user>>>{username}>>>traffic>>>{t}"
+                request = stats_pb2.GetStatsRequest(name=stat_name, reset=True)
                 try:
-                    data = json.loads(result.stdout)
-                    total_traffic += data.get('stat', {}).get('value', 0)
-                    logger.info(f"{data}")
-                except Exception:
-                    continue
-            else:
-                if 'not found' in result.stderr.lower():
-                    logger.info(f"No traffic data found for user {username} and type {t}. Assuming 0.")
-                    continue
-                else:
-                    raise Exception(f"Failed to retrieve xray traffic data for user {username} and type {t}: " + result.stderr)
+                    response = stub.GetStats(request)
+                    total_traffic += response.stat.value
+                except grpc.RpcError as e:
+                    if e.code() == grpc.StatusCode.NOT_FOUND:
+                        continue
+                    else:
+                        logger.error(f"gRPC error for {stat_name}: {e.code()} - {e.details()}")
         return total_traffic
         
 
