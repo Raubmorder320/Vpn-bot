@@ -6,7 +6,7 @@ services:
     image: teddysun/xray:latest
     restart: always
     ports:
-      - "443:443"
+      - "80:8080"
     volumes:
       - ./xray/config.json:/etc/xray/config.json
     networks:
@@ -22,7 +22,7 @@ services:
       - XRAY_HOST=xray
       - XRAY_PORT=10085
     volumes:
-      -.:/app
+      - .:/app
     networks:
       - vpn_net
   bot:
