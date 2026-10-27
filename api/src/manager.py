@@ -4,17 +4,17 @@ import subprocess
 import re
 import os
 import logging
-from api.src.xray_api import stats_pb2, stats_pb2_grpc
+from xray_api import stats_pb2, stats_pb2_grpc
 import grpc
 
 
 logger = logging.getLogger(__name__)
 
 class Manager:
-    def __init__(self, file_path):
+    def __init__(self, file_path, xray_api):
         self.file_path = file_path
+        self.xray_api = xray_api  # адрес API работающего xray, например "xray:10085"
         self.data = self.load_data()
-        self.keys = self.generate_keys()
 
     def load_data(self):
         try:
@@ -25,7 +25,26 @@ class Manager:
 
     def save_data(self):
         with open(self.file_path, 'w') as file:
-            json.dump(self.data, file)
+            json.dump(self.data, file, indent=4)
+
+    def set_private_key(self, private_key):
+        '''Записывает приватный ключ reality во все inbound'ы с security=reality.'''
+        for inbound in self.data.get('inbounds', []):
+            reality = inbound.get('streamSettings', {}).get('realitySettings')
+            if reality is not None:
+                reality['privateKey'] = private_key
+        self.save_data()
+
+    def apply_users(self):
+        '''Добавляет пользователей из config.json в работающий xray без рестарта (xray api adu).
+        Уже существующих пользователей xray пропускает.'''
+        result = subprocess.run(
+            ['xray', 'api', 'adu', f'--server={self.xray_api}', self.file_path],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode != 0:
+            raise Exception("Failed to apply users to xray: " + result.stderr + result.stdout)
+        logger.info(result.stdout.strip())
 
     def generate_uuid(self):
         '''Generates a unique UUID for a new user.'''
@@ -53,7 +72,10 @@ class Manager:
         '''Generates a VLESS link for the user.'''
 
 
-        settings = self.data['inbounds'][inbound_index]
+        inbounds = [i for i in self.data.get('inbounds', []) if 'clients' in i.get('settings', {})]
+        if inbound_index >= len(inbounds):
+            raise IndexError(f"Inbound {inbound_index} is not configured")
+        settings = inbounds[inbound_index]
         port = settings['port']
         sni = settings['streamSettings']['realitySettings']['serverNames'][0]
         sid = settings['streamSettings']['realitySettings']['shortIds'][0]
@@ -74,24 +96,20 @@ class Manager:
             return {'private': private_key, 'public': public_key}  # public_key, private_key
         else:
             raise Exception("Failed to generate keys: " + result.stderr)
-    def restart_service(self):
-        '''Restarts the xray service to apply changes.'''
-        subprocess.run(['sudo', 'systemctl', 'restart', 'xray'], check=True)  
-
     def validate_config(self):
         '''Validates the current configuration using xray.'''
         result = subprocess.run(['xray', '-test', '-c', self.file_path], capture_output=True, text=True)
-        if result.returncode == 0:
-            return True
-        else:
-            return "Configuration is invalid: " + result.stderr
+        if result.returncode != 0:
+            logger.error("Configuration is invalid: " + result.stdout + result.stderr)
+        return result.returncode == 0
     def vnstat_daily_usage(self):
         '''Retrieves daily network usage statistics using vnstat.'''
         result = subprocess.run(['vnstat', '-d', '--json'], capture_output=True, text=True)
         if result.returncode == 0:
             data = json.loads(result.stdout)
 
-            return data['interfaces'][0]['traffic']['day'][-1]['rx'] + data['interfaces'][-1]['traffic']['day'][0]['tx']
+            today = data['interfaces'][0]['traffic']['day'][-1]
+            return today['rx'] + today['tx']  # байты
         else:
             raise Exception("Failed to retrieve vnstat data: " + result.stderr)
     def vnstat_monthly_usage(self):
@@ -105,7 +123,7 @@ class Manager:
     def get_xray_trafic(self, username):
         traffic_type = ['downlink', 'uplink']
         total_traffic = 0
-        with grpc.insecure_channel('localhost:10085') as channel:
+        with grpc.insecure_channel(self.xray_api) as channel:
             stub = stats_pb2_grpc.StatsServiceStub(channel)
             for t in traffic_type:
                 stat_name = f"user>>>{username}>>>traffic>>>{t}"

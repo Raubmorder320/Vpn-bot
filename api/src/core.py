@@ -1,7 +1,8 @@
-from api.src.manager import Manager
-from api.src.db_manager import DatabaseManager
+from manager import Manager
+from db_manager import DatabaseManager
 import json
 import os
+import shutil
 import logging
 from dotenv import load_dotenv  
 
@@ -11,21 +12,28 @@ logger = logging.getLogger(__name__)
 
 
 class VpnService:
-    def __init__(self, config_path, db_path):
-        '''Initializes the VPN service with the given configuration and database paths.'''
-        self.manager = Manager(config_path)
-        self.db_manager = DatabaseManager(db_path)
+    def __init__(self, config_path, template_path, data_dir, xray_api):
+        '''Initializes the VPN service: prepares xray config, reality keys and the database.'''
+        os.makedirs(data_dir, exist_ok=True)
+        # При первом запуске создаём config.json из шаблона
+        if not os.path.exists(config_path):
+            shutil.copy(template_path, config_path)
+        self.manager = Manager(config_path, xray_api)
+        self.db_manager = DatabaseManager(os.path.join(data_dir, 'users.db'))
         self.server_ip = os.getenv("SERVER_IP")
-        if not os.path.exists('keys.json'):
-                
+
+        # Ключи reality генерируются один раз и хранятся в data/keys.json
+        keys_path = os.path.join(data_dir, 'keys.json')
+        if not os.path.exists(keys_path):
             keys = self.manager.generate_keys()
-            self.public_key = keys['public']
-            self.private_key = keys['private']
-            json.dump(keys, open('keys.json', 'w'))
-        else:
-            keys = json.load(open('keys.json', 'r'))
-            self.public_key = keys['public']
-            self.private_key = keys['private']
+            with open(keys_path, 'w') as f:
+                json.dump(keys, f)
+        with open(keys_path) as f:
+            keys = json.load(f)
+        self.public_key = keys['public']
+        self.private_key = keys['private']
+        # Приватный ключ должен лежать в конфиге xray, публичный уходит клиентам в ссылке
+        self.manager.set_private_key(self.private_key)
 
 
 
@@ -41,10 +49,6 @@ class VpnService:
         ''''Validates the current configuration using the manager.'''
         return self.manager.validate_config()
 
-    def restart_service(self):
-        '''Restarts the VPN service using the manager.'''
-        self.manager.restart_service()
-
     def vnstat_daily_usage(self):
         '''Retrieves daily network usage statistics using vnstat.'''
         return self.manager.vnstat_daily_usage()
@@ -54,8 +58,10 @@ class VpnService:
     def get_all_users(self):
         '''Retrieves a list of all users from the database.'''
         return self.db_manager.get_all_users()
-    def get_code(self, code):
-        return self.db_manager.get_code(code)
+    def is_code_valid(self, code):
+        '''Код существует и ещё не использован.'''
+        row = self.db_manager.get_code(code)
+        return row is not None and not row[3]  # row[3] = is_used
     def mark_code_as_used(self, code):
         self.db_manager.mark_code_as_used(code)
     def generate_invite_code(self):
@@ -76,15 +82,17 @@ class VpnService:
         if self.db_manager.get_user(telegram_id):
             raise Exception("User with this Telegram ID already exists.")
         uuid = self.manager.add_user(username)
-        self.db_manager.add_user(username, telegram_id, uuid)
         if not self.manager.validate_config():
             raise Exception("Invalid configuration after adding user.")
-        # self.restart_service()
+        # Применяем нового пользователя к работающему xray без перезапуска
+        self.manager.apply_users()
+        self.db_manager.add_user(username, telegram_id, uuid)
         return uuid
     def get_user_info(self, telegram_id):
         '''Retrieves user information from the database.'''
         user = self.db_manager.get_user_info(telegram_id)
         if user:
+            user['server_ip'] = self.server_ip
             return user
         else:
             return None

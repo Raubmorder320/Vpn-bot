@@ -18,6 +18,8 @@ load_dotenv()
 
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
+# Один HTTP-клиент на всё приложение (раньше на каждый запрос создавался новый и не закрывался)
+api = httpx.AsyncClient(base_url=os.getenv("API_URL", "http://api:8000"), timeout=10)
 start_builder = InlineKeyboardBuilder()
 start_builder.row(InlineKeyboardButton(text="🚀Основная", callback_data="main_key"), 
                   InlineKeyboardButton(text="🆘 Дополнительная", callback_data="emergency_key"),
@@ -53,7 +55,7 @@ class RegistrationState(StatesGroup):
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
-    response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/user/{message.from_user.id}")
+    response = await api.get(f"/user/{message.from_user.id}")
     user_info = response.json()
     print(f"User info for {message.from_user.id}: {user_info}")
     if user_info is None or not user_info['is_active']:
@@ -79,7 +81,7 @@ async def get_key(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
         name = callback_query.from_user.username or callback_query.from_user.first_name
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/get_link/{callback_query.from_user.id}",params={"username": name})
+        response = await api.get(f"/get_config/{callback_query.from_user.id}", params={"username": name, "inbound_index": 0})
         link = response.json().get("link") 
         text = (
         "🐹 <b>Твоя основная ссылка</b>\n"
@@ -97,7 +99,10 @@ async def get_emergency_key(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
         name = callback_query.from_user.username or callback_query.from_user.first_name
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/get_config/{callback_query.from_user.id}",params={"username": name, "inbound_index": 1})
+        response = await api.get(f"/get_config/{callback_query.from_user.id}",params={"username": name, "inbound_index": 1})
+        if response.status_code == 404:
+            await callback_query.message.edit_text("🔄 Резервный канал пока не настроен.", reply_markup=menu_builder.as_markup())
+            return
         link = response.json().get("link")
         text = (
         "🔄 <b>Резервный канал</b>\n"
@@ -131,7 +136,7 @@ async def back_to_menu(callback_query: CallbackQuery):
 async def show_profile(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/user/{callback_query.from_user.id}")
+        response = await api.get(f"/user/{callback_query.from_user.id}")
         user_info = response.json()
         if user_info is None:
             await callback_query.message.answer("🐹 Похоже, мы еще не знакомы. Нажми \"Основная\", чтобы создать аккаунт.", parse_mode="HTML")
@@ -152,7 +157,7 @@ async def show_profile(callback_query: CallbackQuery):
 @dp.callback_query(F.data == "register")
 async def register_user(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.answer()
-    response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/user/{callback_query.from_user.id}")
+    response = await api.get(f"/user/{callback_query.from_user.id}")
     if response.json():
         await callback_query.message.answer("🐹 Спокойно, ты уже с нами! Ключи лежат в главном меню.", parse_mode="HTML", reply_markup=start_builder.as_markup())
         return
@@ -164,18 +169,19 @@ async def register_user(callback_query: CallbackQuery, state: FSMContext):
 @dp.message(RegistrationState.waiting_for_code)
 async def process_code(message: types.Message, state: FSMContext):
     code = message.text.strip()
-    response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/invite/{code}")
-    if not response.json():
+    response = await api.get(f"/invite/{code}")
+    if response.status_code != 200:
         await message.answer("🐹 <b>Код неверный.</b> Убедись, что нет лишних пробелов, и попробуй ещё раз.", parse_mode="HTML")
         return
 
     try:
-        uuid = await httpx.AsyncClient().post(f"{os.getenv('API_URL')}/register", json={
+        response = await api.post("/register", json={
             "username": message.from_user.username or message.from_user.first_name,
             "telegram_id": str(message.from_user.id)
-        }).json().get("uuid")
+        })
+        response.raise_for_status()
         await message.answer("✨ Готово! Ты в системе. Теперь загляни в меню за ключами.", parse_mode="HTML", reply_markup=start_builder.as_markup())
-        await httpx.AsyncClient().post(f"{os.getenv('API_URL')}/invite/{code}/use")
+        await api.post(f"/invite/{code}/use")
     except Exception as e:
         logger.error(f"Error occurred during registration: {str(e)}")
         await message.answer(f"Ошибка при регистрации: {str(e)}", parse_mode="HTML")
@@ -197,20 +203,23 @@ async def admin_panel(message: types.Message):
 async def show_stats(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/vnstat/daily")
+        response = await api.get("/vnstat/daily")
+        response.raise_for_status()
         daily_usage = response.json().get("daily_usage")
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/vnstat/monthly")
+        response = await api.get("/vnstat/monthly")
+        response.raise_for_status()
         monthly_usage = response.json().get("monthly_usage")
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/users")
+        response = await api.get(f"/users")
         users = response.json().get("users")
         traffic = [(user[1], user[6]) for user in users]
         text = "<b>Статистика использования трафика:</b>\n\n"
         for username, usage in traffic:
             usage_gb = usage / (1024 * 1024 * 1024)  # Convert to GB
             text += f"Пользователь: {username}, Использованный трафик: {usage_gb:.2f} Гб\n"
-        text += f"\n<b>Общий трафик за сегодня:</b> {daily_usage} Гб\n"
-        text += f"<b>Общий трафик за этот месяц:</b> {monthly_usage} Гб\n"
-        text += f"<b>Остаток трафика:</b> {1000 - float(monthly_usage):.2f} Гб\n"
+        # vnstat отдаёт байты, переводим в ГБ
+        text += f"\n<b>Общий трафик за сегодня:</b> {daily_usage / 1024**3:.2f} Гб\n"
+        text += f"<b>Общий трафик за этот месяц:</b> {monthly_usage / 1024**3:.2f} Гб\n"
+        text += f"<b>Остаток трафика:</b> {1000 - monthly_usage / 1024**3:.2f} Гб из 1000\n"
         await callback_query.message.answer(text, parse_mode="HTML")
         
     except Exception as e:
@@ -220,7 +229,7 @@ async def show_stats(callback_query: CallbackQuery):
 async def show_users(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
-        response = await httpx.AsyncClient().get(f"{os.getenv('API_URL')}/users")
+        response = await api.get(f"/users")
         users = response.json().get("users")
 
         if not users:
@@ -238,7 +247,7 @@ async def show_users(callback_query: CallbackQuery):
 async def create_invite(callback_query: CallbackQuery):
     await callback_query.answer()
     try:
-        response = await httpx.AsyncClient().post(f"{os.getenv('API_URL')}/invite")
+        response = await api.post(f"/invite")
         code = response.json().get("code")
         await callback_query.message.answer(f"Новый инвайт код: <code>{code}</code>", parse_mode="HTML")
     except Exception as e:
@@ -290,14 +299,14 @@ async def traffic_update():
         if current_month != last_reset_month:
             try:
                 logger.info("Resetting monthly traffic usage for all users...")
-                await httpx.AsyncClient().post(f"{os.getenv('API_URL')}/reset_all_traffic")
+                await api.post(f"/reset_all_traffic")
                 last_reset_month = current_month
                 logger.info("Monthly traffic usage reset successfully.")
             except Exception as e:
                 logger.error(f"Error occurred while resetting monthly traffic usage: {str(e)}")
         try:
             logger.info("Updating traffic usage for all users...")
-            await httpx.AsyncClient().post(f"{os.getenv('API_URL')}/update_traffic_usage")
+            await api.post(f"/update_traffic_usage")
             logger.info("Traffic usage updated successfully.")
         except Exception as e:
             logger.error(f"Error occurred while updating traffic usage: {str(e)}")

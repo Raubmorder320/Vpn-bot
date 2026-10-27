@@ -2,14 +2,27 @@
     "log": {
         "loglevel": "warning"
     },
+    "api": {
+        "tag": "api",
+        "listen": "0.0.0.0:10085",
+        "services": ["HandlerService", "StatsService"]
+    },
+    "stats": {},
+    "policy": {
+        "levels": {
+            "0": {
+                "statsUserUplink": true,
+                "statsUserDownlink": true
+            }
+        }
+    },
     "inbounds": [
         {
+            "tag": "vless-reality",
             "port": 443,
             "protocol": "vless",
             "settings": {
-                "clients": [
-
-                ],
+                "clients": [],
                 "decryption": "none"
             },
             "streamSettings": {

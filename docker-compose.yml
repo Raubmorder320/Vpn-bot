@@ -1,40 +1,53 @@
-version: '3.8'
-
 services:
-  xray:
-    container_name: xray
-    image: teddysun/xray:latest
-    restart: always
-    ports:
-      - "80:8080"
-    volumes:
-      - ./xray/config.json:/etc/xray/config.json
-    networks:
-      - vpn_net
-
   api:
     build: ./api
     container_name: vpn_api
     restart: always
-    depends_on:
-      - xray
+    env_file: .env
     environment:
-      - XRAY_HOST=xray
-      - XRAY_PORT=10085
+      - CONFIG_PATH=/etc/xray/config.json
+      - CONFIG_TEMPLATE=/etc/xray/config.example.json
+      - DATA_DIR=/app/data
+      - XRAY_API=xray:10085
     volumes:
-      - .:/app
+      - ./xray:/etc/xray
+      - ./data:/app/data
+      - /var/lib/vnstat:/var/lib/vnstat:ro
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - vpn_net
+
+  xray:
+    image: teddysun/xray:latest
+    container_name: xray
+    restart: always
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "443:443"
+    volumes:
+      - ./xray:/etc/xray:ro
+    networks:
+      - vpn_net
+
   bot:
     build: ./bot
-    restart: always
     container_name: vpn_bot
+    restart: always
+    env_file: .env
+    environment:
+      - API_URL=http://api:8000
     depends_on:
-      - api
-    volumes:
-      - .:/app
+      api:
+        condition: service_healthy
     networks:
       - vpn_net
+
 networks:
   vpn_net:
     driver: bridge

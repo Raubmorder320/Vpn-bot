@@ -1,4 +1,4 @@
-from api.src.core import VpnService
+from core import VpnService
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
@@ -6,7 +6,17 @@ import dotenv
 
 dotenv.load_dotenv()
 app = FastAPI()
-vpn_service = VpnService(os.getenv("CONFIG_PATH"), os.getenv("DB_PATH"))
+vpn_service = VpnService(
+    config_path=os.getenv("CONFIG_PATH", "/etc/xray/config.json"),
+    template_path=os.getenv("CONFIG_TEMPLATE", "/etc/xray/config.example.json"),
+    data_dir=os.getenv("DATA_DIR", "data"),
+    xray_api=os.getenv("XRAY_API", "xray:10085"),
+)
+
+@app.get("/health")
+def health():
+    '''Healthcheck for docker compose.'''
+    return {"status": "ok"}
 
 class UserRegistration(BaseModel):
     username: str
@@ -35,6 +45,13 @@ def generate_invite_code():
         return {"message": "Invite code generated successfully", "code": code}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+@app.get("/invite/{code}")
+def check_invite_code(code: str):
+    '''API endpoint to check that an invite code exists and is not used yet.'''
+    if not vpn_service.is_code_valid(code):
+        raise HTTPException(status_code=404, detail="Invalid or used invite code")
+    return {"valid": True}
+
 @app.post("/invite/{code}/use")
 def use_invite_code(code: str):
     '''API endpoint to mark an invite code as used.'''
@@ -45,11 +62,13 @@ def use_invite_code(code: str):
         raise HTTPException(status_code=400, detail=str(e))
     
 @app.get("/get_config/{telegram_id}")
-def get_user_link(telegram_id: str, username: str, inbound_index: int):
+def get_user_link(telegram_id: str, username: str, inbound_index: int = 0):
     '''API endpoint to retrieve the VPN configuration link for a user based on Telegram ID and inbound index.'''
     try:
         link = vpn_service.get_user_config(telegram_id, username, inbound_index)
         return {"link": link}
+    except IndexError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
@@ -78,14 +97,6 @@ def get_all_users():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@app.post("/restart")
-def restart_service():
-    '''API endpoint to restart the VPN service.'''
-    try:
-        vpn_service.restart_service()
-        return {"message": "VPN service restarted successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 @app.post("/reset_all_traffic")
 def reset_all_traffic_usage():
     '''API endpoint to reset traffic usage for all users.'''

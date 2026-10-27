@@ -1,8 +1,7 @@
 .env
 __pycache__/
-keys.json
-users.db
+data/
+xray/config.json
 bot.log
 access.log
 error.log
-config.json

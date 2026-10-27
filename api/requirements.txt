@@ -1,6 +1,5 @@
-aiogram
-python-dotenv
 fastapi
 uvicorn
-grpcio
-grpcio-tools
+python-dotenv
+grpcio>=1.80
+protobuf>=6.31.1
